@@ -270,7 +270,7 @@ class WebSocketHandler {
    * @private
    */
   async _streamChatResponse(message, context, userProfile, onChunk) {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       const routingDecision = this.claudeApi.router.selectModel(
         await this.claudeApi.router.analyzeMessage(message)
       );
