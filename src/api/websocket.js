@@ -194,7 +194,7 @@ class WebSocketHandler {
 
     try {
       // Build context
-      const context = await this.contextBuilder.buildContext(
+      let context = await this.contextBuilder.buildContext(
         userId,
         session.messages
       );
@@ -228,12 +228,17 @@ class WebSocketHandler {
         }
       );
 
-      // Send completion signal
+      // Analyze emotion from the response for avatar
+      const emotionData = this._extractEmotion(fullResponse, content);
+
+      // Send completion signal with emotion data
       ws.send(
         JSON.stringify({
           type: 'message-complete',
           messageId,
           model: response.model,
+          emotion: emotionData.emotion,
+          intensity: emotionData.intensity,
         })
       );
 
@@ -351,6 +356,80 @@ class WebSocketHandler {
     );
 
     this.sessions.delete(userId);
+  }
+
+  /**
+   * Extract emotion from response text and user message
+   * Maps to the 9 avatar emotion states: neutral, joy, curiosity, empathy, concern, excitement, calm, playful, focused
+   * @private
+   */
+  _extractEmotion(responseText, userMessage) {
+    const text = (responseText + ' ' + userMessage).toLowerCase();
+
+    // Keyword-based emotion detection with intensity scoring
+    const emotionScores = {
+      joy: 0,
+      curiosity: 0,
+      empathy: 0,
+      concern: 0,
+      excitement: 0,
+      calm: 0,
+      playful: 0,
+      focused: 0,
+    };
+
+    // Joy indicators
+    if (/\b(happy|glad|wonderful|great|amazing|love|beautiful|proud|congratulat|celebrate|fantastic)\b/.test(text)) emotionScores.joy += 3;
+    if (/\b(good|nice|pleased|smile|enjoy|fun)\b/.test(text)) emotionScores.joy += 1;
+    if (/[!]{1,}/.test(responseText) && /\b(great|awesome|wonderful)\b/.test(text)) emotionScores.joy += 2;
+
+    // Curiosity indicators
+    if (/\b(interesting|curious|wonder|fascinating|tell me more|explore|discover|intriguing)\b/.test(text)) emotionScores.curiosity += 3;
+    if (/\b(what if|how does|why do|could you explain|I'd love to know)\b/.test(text)) emotionScores.curiosity += 2;
+
+    // Empathy indicators
+    if (/\b(sorry|understand|feel|hear you|that must|difficult|tough|hard time|loss|lost|grief|pain|hurt)\b/.test(text)) emotionScores.empathy += 3;
+    if (/\b(I'm here|with you|support|care about|matters to me)\b/.test(text)) emotionScores.empathy += 2;
+
+    // Concern indicators
+    if (/\b(worried|concern|careful|warning|danger|risk|problem|trouble|struggle|stress|anxious|overwhelm)\b/.test(text)) emotionScores.concern += 3;
+    if (/\b(are you okay|how are you feeling|take care|be careful)\b/.test(text)) emotionScores.concern += 2;
+
+    // Excitement indicators
+    if (/\b(excited|thrilled|can't wait|incredible|breakthrough|huge|epic|mind-blowing|phenomenal)\b/.test(text)) emotionScores.excitement += 3;
+    if (/[!]{2,}/.test(responseText)) emotionScores.excitement += 1;
+
+    // Calm indicators
+    if (/\b(peace|calm|relax|breathe|mindful|serene|gentle|quiet|meditation|tranquil|still|slow)\b/.test(text)) emotionScores.calm += 3;
+    if (/\b(take your time|no rush|it's okay|easy)\b/.test(text)) emotionScores.calm += 1;
+
+    // Playful indicators
+    if (/\b(haha|lol|funny|joke|silly|laugh|playful|tease|grin|wink|kidding)\b/.test(text)) emotionScores.playful += 3;
+    if (/[😄😂🤣😊😏😜]/.test(text)) emotionScores.playful += 2;
+
+    // Focused indicators
+    if (/\b(analyze|implement|code|build|technical|specific|detail|step by step|algorithm|architecture|debug|optimize)\b/.test(text)) emotionScores.focused += 3;
+    if (/\b(let's|here's how|first|second|third|the approach)\b/.test(text)) emotionScores.focused += 1;
+
+    // Find the dominant emotion
+    let maxScore = 0;
+    let dominantEmotion = 'neutral';
+    for (const [emotion, score] of Object.entries(emotionScores)) {
+      if (score > maxScore) {
+        maxScore = score;
+        dominantEmotion = emotion;
+      }
+    }
+
+    // Calculate intensity (0.0 - 1.0)
+    const intensity = Math.min(maxScore / 6, 1.0);
+
+    // If no strong emotion detected, stay neutral
+    if (maxScore < 2) {
+      return { emotion: 'neutral', intensity: 0.3 };
+    }
+
+    return { emotion: dominantEmotion, intensity: Math.max(intensity, 0.3) };
   }
 
   /**

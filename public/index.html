@@ -3,337 +3,794 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Nyra - Your AI Companion</title>
+  <title>Nyra</title>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --glow-color: rgba(160, 160, 220, 0.15);
+      --glow-color-strong: rgba(160, 160, 220, 0.3);
+      --transition-emotion: 800ms ease;
+      --transition-intensity: 500ms ease;
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-        'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-        sans-serif;
-      background: linear-gradient(135deg, #0f0f1e 0%, #1a1a2e 100%);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+      background: #0a0a14;
       color: #e0e0e0;
       min-height: 100vh;
-      display: flex;
-      flex-direction: column;
+      overflow: hidden;
     }
 
-    .container {
-      max-width: 900px;
-      width: 100%;
-      margin: 0 auto;
+    /* === AMBIENT GLOW BACKGROUND === */
+    .ambient-glow {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: radial-gradient(ellipse at 50% 30%, var(--glow-color) 0%, transparent 70%);
+      transition: background var(--transition-emotion);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* === LAYOUT === */
+    .app {
+      position: relative;
+      z-index: 1;
       display: flex;
       flex-direction: column;
       height: 100vh;
-      padding: 0;
+      max-width: 900px;
+      margin: 0 auto;
     }
 
-    /* Header */
-    .header {
-      padding: 20px;
-      border-bottom: 1px solid rgba(224, 224, 224, 0.1);
-      background: rgba(15, 15, 30, 0.7);
-      backdrop-filter: blur(10px);
+    /* === AVATAR SECTION === */
+    .avatar-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 28px 20px 12px;
+      flex-shrink: 0;
     }
 
-    .header-title {
-      font-size: 24px;
-      font-weight: 300;
-      letter-spacing: 2px;
-      color: #ffffff;
-      text-align: center;
+    .avatar-container {
+      position: relative;
+      width: 120px;
+      height: 120px;
     }
 
-    .header-subtitle {
-      font-size: 12px;
-      color: #888;
-      text-align: center;
-      margin-top: 4px;
+    /* Outer ring */
+    .avatar-ring {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      border-radius: 50%;
+      border: 2px solid rgba(160, 160, 220, 0.4);
+      transition: border-color var(--transition-emotion), box-shadow var(--transition-emotion);
+      animation: ringPulseIdle 4s ease-in-out infinite;
+    }
+
+    @keyframes ringPulseIdle {
+      0%, 100% { transform: scale(1); opacity: 0.7; }
+      50% { transform: scale(1.03); opacity: 1; }
+    }
+
+    /* Thinking state ring */
+    .avatar-container.thinking .avatar-ring {
+      animation: ringThinking 1.2s linear infinite;
+      border-color: rgba(160, 160, 220, 0.8);
+    }
+
+    @keyframes ringThinking {
+      0% { transform: rotate(0deg) scale(1); }
+      50% { transform: rotate(180deg) scale(1.05); }
+      100% { transform: rotate(360deg) scale(1); }
+    }
+
+    /* Face container */
+    .avatar-face {
+      position: absolute;
+      top: 15px; left: 15px;
+      width: 90px;
+      height: 90px;
+      background: radial-gradient(circle at 50% 40%, #1e1e3a, #12122a);
+      border-radius: 50%;
+      overflow: hidden;
+    }
+
+    /* === EYES === */
+    .eyes {
+      position: absolute;
+      top: 32px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 18px;
+    }
+
+    .eye {
+      width: 12px;
+      height: 12px;
+      background: #c8c8ff;
+      border-radius: 50%;
+      transition: all var(--transition-emotion);
+      position: relative;
+    }
+
+    .eye::after {
+      content: '';
+      position: absolute;
+      top: 2px; left: 2px;
+      width: 4px; height: 4px;
+      background: white;
+      border-radius: 50%;
+      opacity: 0.8;
+    }
+
+    /* Eyelids */
+    .eyelid {
+      position: absolute;
+      top: -1px; left: -2px; right: -2px;
+      height: 0;
+      background: #12122a;
+      border-radius: 0 0 50% 50%;
+      transition: height var(--transition-intensity);
+      z-index: 2;
+    }
+
+    /* Blink animation */
+    .eye.blinking .eyelid {
+      animation: blink 150ms ease-in-out;
+    }
+
+    @keyframes blink {
+      0%, 100% { height: 0; }
+      50% { height: 14px; }
+    }
+
+    /* === MOUTH === */
+    .mouth {
+      position: absolute;
+      bottom: 22px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 20px;
+      height: 3px;
+      background: rgba(200, 200, 255, 0.5);
+      border-radius: 2px;
+      transition: all var(--transition-emotion);
+    }
+
+    /* === EMOTION STATES === */
+
+    /* Neutral */
+    .emotion-neutral .eye { height: 12px; border-radius: 50%; }
+    .emotion-neutral .mouth { width: 20px; height: 3px; border-radius: 2px; }
+    .emotion-neutral .avatar-ring { border-color: rgba(160, 160, 220, 0.4); }
+
+    /* Joy */
+    .emotion-joy .eye { height: 8px; border-radius: 50% 50% 40% 40%; }
+    .emotion-joy .eyelid { height: 3px; }
+    .emotion-joy .mouth { width: 24px; height: 10px; border-radius: 0 0 50% 50%; background: rgba(255, 200, 100, 0.6); }
+    .emotion-joy .avatar-ring { border-color: rgba(255, 200, 100, 0.7); box-shadow: 0 0 20px rgba(255, 200, 100, 0.3); }
+
+    /* Curiosity */
+    .emotion-curiosity .eye:first-child { height: 14px; width: 14px; }
+    .emotion-curiosity .eye:last-child { height: 11px; }
+    .emotion-curiosity .mouth { width: 10px; height: 10px; border-radius: 50%; background: rgba(100, 200, 255, 0.5); }
+    .emotion-curiosity .avatar-ring { border-color: rgba(100, 200, 255, 0.6); box-shadow: 0 0 15px rgba(100, 200, 255, 0.2); }
+
+    /* Empathy */
+    .emotion-empathy .eye { height: 10px; border-radius: 50%; opacity: 0.85; }
+    .emotion-empathy .eyelid { height: 2px; }
+    .emotion-empathy .mouth { width: 16px; height: 4px; border-radius: 2px; background: rgba(180, 140, 220, 0.5); }
+    .emotion-empathy .avatar-ring { border-color: rgba(180, 140, 220, 0.6); box-shadow: 0 0 20px rgba(180, 140, 220, 0.25); }
+
+    /* Concern */
+    .emotion-concern .eye { height: 13px; width: 11px; }
+    .emotion-concern .eyelid { height: 3px; }
+    .emotion-concern .mouth { width: 18px; height: 6px; border-radius: 50% 50% 30% 30%; transform: translateX(-50%) rotate(180deg); background: rgba(220, 160, 100, 0.5); }
+    .emotion-concern .avatar-ring { border-color: rgba(220, 160, 100, 0.6); box-shadow: 0 0 15px rgba(220, 160, 100, 0.2); }
+
+    /* Excitement */
+    .emotion-excitement .eye { height: 14px; width: 14px; }
+    .emotion-excitement .mouth { width: 26px; height: 12px; border-radius: 0 0 50% 50%; background: rgba(255, 180, 50, 0.7); }
+    .emotion-excitement .avatar-ring { border-color: rgba(255, 180, 50, 0.8); box-shadow: 0 0 25px rgba(255, 180, 50, 0.4); }
+
+    /* Calm */
+    .emotion-calm .eye { height: 8px; border-radius: 50%; opacity: 0.7; }
+    .emotion-calm .eyelid { height: 4px; }
+    .emotion-calm .mouth { width: 22px; height: 4px; border-radius: 2px; background: rgba(100, 200, 180, 0.4); }
+    .emotion-calm .avatar-ring { border-color: rgba(100, 200, 180, 0.5); box-shadow: 0 0 20px rgba(100, 200, 180, 0.15); }
+
+    /* Playful */
+    .emotion-playful .eye:first-child { height: 7px; border-radius: 50% 50% 40% 40%; }
+    .emotion-playful .eye:last-child { height: 12px; width: 13px; }
+    .emotion-playful .mouth { width: 22px; height: 8px; border-radius: 0 0 50% 50%; background: rgba(255, 150, 200, 0.6); transform: translateX(-50%) rotate(-5deg); }
+    .emotion-playful .avatar-ring { border-color: rgba(255, 150, 200, 0.6); box-shadow: 0 0 18px rgba(255, 150, 200, 0.25); }
+
+    /* Focused */
+    .emotion-focused .eye { height: 10px; width: 10px; }
+    .emotion-focused .eyelid { height: 1px; }
+    .emotion-focused .mouth { width: 14px; height: 2px; border-radius: 1px; background: rgba(100, 150, 255, 0.5); }
+    .emotion-focused .avatar-ring { border-color: rgba(100, 150, 255, 0.6); box-shadow: 0 0 15px rgba(100, 150, 255, 0.2); }
+
+    /* Intensity modulation via CSS custom property */
+    .intensity-high .avatar-ring { box-shadow: 0 0 35px var(--glow-color-strong); }
+    .intensity-high .eye { filter: brightness(1.3); }
+    .intensity-low .avatar-ring { opacity: 0.7; }
+    .intensity-low .eye { opacity: 0.7; }
+
+    /* Thinking eye movement */
+    .avatar-container.thinking .eye {
+      animation: eyeThinking 2s ease-in-out infinite;
+    }
+
+    @keyframes eyeThinking {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(2px); }
+      75% { transform: translateX(-2px); }
+    }
+
+    /* === EMOTION BADGE === */
+    .emotion-badge {
+      margin-top: 10px;
+      font-size: 11px;
+      letter-spacing: 1.5px;
       text-transform: uppercase;
-      letter-spacing: 1px;
+      color: rgba(200, 200, 255, 0.6);
+      transition: color var(--transition-emotion);
+      min-height: 16px;
     }
 
-    /* Chat Container */
+    .nyra-name {
+      font-size: 20px;
+      font-weight: 300;
+      letter-spacing: 3px;
+      color: rgba(255, 255, 255, 0.9);
+      margin-top: 6px;
+    }
+
+    /* === CHAT === */
     .chat-container {
       flex: 1;
       overflow-y: auto;
-      padding: 20px;
+      padding: 12px 20px;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 10px;
     }
 
-    .chat-container::-webkit-scrollbar {
-      width: 6px;
-    }
+    .chat-container::-webkit-scrollbar { width: 4px; }
+    .chat-container::-webkit-scrollbar-track { background: transparent; }
+    .chat-container::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 2px; }
 
-    .chat-container::-webkit-scrollbar-track {
-      background: rgba(255, 255, 255, 0.05);
-    }
-
-    .chat-container::-webkit-scrollbar-thumb {
-      background: rgba(255, 255, 255, 0.2);
-      border-radius: 3px;
-    }
-
-    /* Messages */
     .message {
       display: flex;
-      margin-bottom: 12px;
-      animation: slideIn 0.3s ease-out;
+      animation: msgIn 0.3s ease-out;
     }
 
-    @keyframes slideIn {
-      from {
-        opacity: 0;
-        transform: translateY(10px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+    @keyframes msgIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
-    .message.user {
-      justify-content: flex-end;
-    }
-
-    .message.nyra {
-      justify-content: flex-start;
-    }
+    .message.user { justify-content: flex-end; }
+    .message.nyra { justify-content: flex-start; }
 
     .message-content {
       max-width: 70%;
-      padding: 12px 16px;
+      padding: 10px 14px;
       border-radius: 12px;
-      word-wrap: break-word;
       line-height: 1.5;
-      font-size: 15px;
+      font-size: 14px;
     }
 
     .message.user .message-content {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: #ffffff;
+      background: linear-gradient(135deg, #4a5abb 0%, #6a4a9a 100%);
+      color: #fff;
     }
 
     .message.nyra .message-content {
-      background: rgba(224, 224, 224, 0.1);
-      color: #e0e0e0;
-      border: 1px solid rgba(224, 224, 224, 0.15);
+      background: rgba(200, 200, 255, 0.08);
+      color: #d0d0e8;
+      border: 1px solid rgba(200, 200, 255, 0.1);
     }
 
-    /* Typing Indicator */
-    .typing-indicator {
+    /* Typing indicator */
+    .typing-dots {
       display: flex;
       gap: 4px;
-      padding: 12px 16px;
-      background: rgba(224, 224, 224, 0.1);
-      border: 1px solid rgba(224, 224, 224, 0.15);
+      padding: 10px 14px;
+      background: rgba(200, 200, 255, 0.08);
+      border: 1px solid rgba(200, 200, 255, 0.1);
       border-radius: 12px;
       width: fit-content;
     }
 
-    .typing-dot {
-      width: 8px;
-      height: 8px;
+    .typing-dots span {
+      width: 6px; height: 6px;
       border-radius: 50%;
-      background: #888;
-      animation: typingAnimation 1.4s infinite;
+      background: rgba(200, 200, 255, 0.5);
+      animation: dotPulse 1.4s infinite;
+    }
+    .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes dotPulse {
+      0%, 60%, 100% { opacity: 0.4; }
+      30% { opacity: 1; }
     }
 
-    .typing-dot:nth-child(2) {
-      animation-delay: 0.2s;
-    }
-
-    .typing-dot:nth-child(3) {
-      animation-delay: 0.4s;
-    }
-
-    @keyframes typingAnimation {
-      0%, 60%, 100% {
-        opacity: 0.5;
-      }
-      30% {
-        opacity: 1;
-      }
-    }
-
-    /* Input Area */
+    /* === INPUT AREA === */
     .input-area {
-      padding: 20px;
-      border-top: 1px solid rgba(224, 224, 224, 0.1);
-      background: rgba(15, 15, 30, 0.7);
+      padding: 12px 20px 20px;
+      border-top: 1px solid rgba(200, 200, 255, 0.08);
+      background: rgba(10, 10, 20, 0.8);
       backdrop-filter: blur(10px);
+      flex-shrink: 0;
     }
 
-    .input-wrapper {
+    .input-row {
       display: flex;
-      gap: 12px;
+      gap: 8px;
+      align-items: center;
     }
 
-    input[type='text'] {
+    #messageInput {
       flex: 1;
-      padding: 12px 16px;
-      background: rgba(224, 224, 224, 0.05);
-      border: 1px solid rgba(224, 224, 224, 0.15);
+      padding: 10px 14px;
+      background: rgba(200, 200, 255, 0.06);
+      border: 1px solid rgba(200, 200, 255, 0.12);
       border-radius: 8px;
       color: #e0e0e0;
-      font-size: 15px;
+      font-size: 14px;
       font-family: inherit;
-      transition: all 0.2s ease;
+      transition: all 0.2s;
     }
 
-    input[type='text']:focus {
+    #messageInput:focus {
       outline: none;
-      background: rgba(224, 224, 224, 0.1);
-      border-color: rgba(224, 224, 224, 0.3);
-      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      border-color: rgba(200, 200, 255, 0.3);
+      background: rgba(200, 200, 255, 0.1);
     }
 
-    input[type='text']::placeholder {
-      color: #666;
-    }
+    #messageInput::placeholder { color: #555; }
 
-    button {
-      padding: 12px 24px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
+    .btn {
+      width: 40px; height: 40px;
       border: none;
       border-radius: 8px;
       cursor: pointer;
-      font-size: 15px;
-      font-weight: 500;
-      transition: all 0.2s ease;
       display: flex;
       align-items: center;
-      gap: 8px;
+      justify-content: center;
+      transition: all 0.2s;
+      flex-shrink: 0;
     }
 
-    button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
+    .btn:disabled { opacity: 0.3; cursor: default; }
+
+    .btn-send {
+      background: linear-gradient(135deg, #4a5abb, #6a4a9a);
+      color: white;
     }
 
-    button:active {
-      transform: translateY(0);
+    .btn-send:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(100, 100, 200, 0.3); }
+
+    .btn-mic {
+      background: rgba(200, 200, 255, 0.1);
+      color: rgba(200, 200, 255, 0.7);
+      border: 1px solid rgba(200, 200, 255, 0.15);
     }
 
-    button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-      transform: none;
+    .btn-mic:hover:not(:disabled) { background: rgba(200, 200, 255, 0.2); }
+
+    .btn-mic.recording {
+      background: rgba(255, 80, 80, 0.3);
+      border-color: rgba(255, 80, 80, 0.6);
+      color: #ff5050;
+      animation: micPulse 1s ease-in-out infinite;
     }
 
-    /* Status */
-    .status {
-      padding: 12px 20px;
-      font-size: 12px;
-      text-align: center;
-      color: #888;
-      background: rgba(224, 224, 224, 0.05);
-      border-top: 1px solid rgba(224, 224, 224, 0.1);
+    @keyframes micPulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(255, 80, 80, 0.3); }
+      50% { box-shadow: 0 0 0 6px rgba(255, 80, 80, 0); }
     }
 
-    .status.connected {
-      color: #4ade80;
-    }
-
-    .status.disconnected {
-      color: #ef4444;
-    }
-
-    /* Initial Message */
-    .welcome-message {
-      text-align: center;
-      padding: 40px 20px;
-      color: #888;
-    }
-
-    .welcome-icon {
-      font-size: 48px;
-      margin-bottom: 16px;
-      opacity: 0.5;
-    }
-
-    .welcome-text {
-      font-size: 18px;
-      margin-bottom: 8px;
-      color: #aaa;
-    }
-
-    .welcome-subtitle {
+    .btn-voice {
+      background: rgba(200, 200, 255, 0.1);
+      color: rgba(200, 200, 255, 0.7);
+      border: 1px solid rgba(200, 200, 255, 0.15);
       font-size: 14px;
-      color: #666;
     }
+
+    .btn-voice.active { color: rgba(100, 255, 100, 0.8); border-color: rgba(100, 255, 100, 0.3); }
+
+    /* === STATUS BAR === */
+    .status-bar {
+      font-size: 10px;
+      text-align: center;
+      padding: 6px;
+      color: rgba(200, 200, 255, 0.3);
+      letter-spacing: 0.5px;
+    }
+
+    .status-bar.connected { color: rgba(100, 255, 100, 0.5); }
+    .status-bar.disconnected { color: rgba(255, 80, 80, 0.5); }
+
+    /* SVG icons */
+    .icon { width: 18px; height: 18px; fill: currentColor; }
 
     /* Responsive */
     @media (max-width: 600px) {
-      .message-content {
-        max-width: 85%;
-      }
-
-      .header-title {
-        font-size: 20px;
-      }
-
-      input[type='text'] {
-        font-size: 16px; /* Prevents zoom on mobile */
-      }
+      .avatar-container { width: 100px; height: 100px; }
+      .avatar-face { top: 12px; left: 12px; width: 76px; height: 76px; }
+      .eyes { top: 26px; gap: 14px; }
+      .eye { width: 10px; height: 10px; }
+      .mouth { bottom: 18px; }
+      .message-content { max-width: 85%; }
+      #messageInput { font-size: 16px; }
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <!-- Header -->
-    <div class="header">
-      <div class="header-title">Nyra</div>
-      <div class="header-subtitle">Your AI Companion</div>
-    </div>
+  <!-- Ambient glow background -->
+  <div class="ambient-glow" id="ambientGlow"></div>
 
-    <!-- Chat Messages -->
-    <div class="chat-container" id="chatContainer">
-      <div class="welcome-message">
-        <div class="welcome-icon">💬</div>
-        <div class="welcome-text">Welcome to Nyra</div>
-        <div class="welcome-subtitle">Start a conversation</div>
+  <div class="app">
+    <!-- Avatar Section -->
+    <div class="avatar-section">
+      <div class="avatar-container emotion-neutral" id="avatarContainer">
+        <div class="avatar-ring"></div>
+        <div class="avatar-face">
+          <div class="eyes">
+            <div class="eye" id="eyeLeft"><div class="eyelid"></div></div>
+            <div class="eye" id="eyeRight"><div class="eyelid"></div></div>
+          </div>
+          <div class="mouth" id="mouth"></div>
+        </div>
       </div>
+      <div class="nyra-name">NYRA</div>
+      <div class="emotion-badge" id="emotionBadge">neutral</div>
     </div>
 
-    <!-- Input Area -->
+    <!-- Chat -->
+    <div class="chat-container" id="chatContainer"></div>
+
+    <!-- Input -->
     <div class="input-area">
-      <div class="input-wrapper">
-        <input
-          type="text"
-          id="messageInput"
-          placeholder="Tell me something..."
-          disabled
-        />
-        <button id="sendButton" disabled>Send</button>
+      <div class="input-row">
+        <button class="btn btn-mic" id="micBtn" title="Voice input" disabled>
+          <svg class="icon" viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5zm6 6c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+        </button>
+        <input type="text" id="messageInput" placeholder="Talk to Nyra..." disabled />
+        <button class="btn btn-send" id="sendBtn" disabled>
+          <svg class="icon" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+        </button>
+        <button class="btn btn-voice" id="voiceToggle" title="Toggle voice output">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+        </button>
       </div>
     </div>
 
     <!-- Status -->
-    <div class="status disconnected" id="status">
-      Connecting...
-    </div>
+    <div class="status-bar disconnected" id="statusBar">connecting...</div>
   </div>
 
   <script>
-    const chatContainer = document.getElementById('chatContainer');
-    const messageInput = document.getElementById('messageInput');
-    const sendButton = document.getElementById('sendButton');
-    const status = document.getElementById('status');
+    // ===================== STATE =====================
+    const state = {
+      ws: null,
+      userId: null,
+      sessionId: null,
+      connected: false,
+      currentEmotion: 'neutral',
+      currentIntensity: 0.3,
+      voiceEnabled: true,
+      isRecording: false,
+      recognition: null,
+      currentMessageEl: null,
+      blinkInterval: null,
+    };
 
-    let ws = null;
-    let sessionId = null;
-    let userId = null;
-    let isConnected = false;
+    // ===================== DOM REFS =====================
+    const $ = id => document.getElementById(id);
+    const chatContainer = $('chatContainer');
+    const messageInput = $('messageInput');
+    const sendBtn = $('sendBtn');
+    const micBtn = $('micBtn');
+    const voiceToggle = $('voiceToggle');
+    const statusBar = $('statusBar');
+    const avatarContainer = $('avatarContainer');
+    const emotionBadge = $('emotionBadge');
+    const ambientGlow = $('ambientGlow');
 
-    // Generate or retrieve userId
+    // ===================== GLOW COLORS PER EMOTION =====================
+    const glowColors = {
+      neutral:    { glow: 'rgba(160, 160, 220, 0.12)', strong: 'rgba(160, 160, 220, 0.25)' },
+      joy:        { glow: 'rgba(255, 200, 100, 0.15)', strong: 'rgba(255, 200, 100, 0.3)' },
+      curiosity:  { glow: 'rgba(100, 200, 255, 0.12)', strong: 'rgba(100, 200, 255, 0.25)' },
+      empathy:    { glow: 'rgba(180, 140, 220, 0.15)', strong: 'rgba(180, 140, 220, 0.3)' },
+      concern:    { glow: 'rgba(220, 160, 100, 0.12)', strong: 'rgba(220, 160, 100, 0.25)' },
+      excitement: { glow: 'rgba(255, 180, 50, 0.18)',  strong: 'rgba(255, 180, 50, 0.35)' },
+      calm:       { glow: 'rgba(100, 200, 180, 0.10)', strong: 'rgba(100, 200, 180, 0.2)' },
+      playful:    { glow: 'rgba(255, 150, 200, 0.14)', strong: 'rgba(255, 150, 200, 0.28)' },
+      focused:    { glow: 'rgba(100, 150, 255, 0.12)', strong: 'rgba(100, 150, 255, 0.25)' },
+    };
+
+    // ===================== AVATAR =====================
+    function setEmotion(emotion, intensity) {
+      state.currentEmotion = emotion;
+      state.currentIntensity = intensity;
+
+      // Remove all emotion classes
+      avatarContainer.className = 'avatar-container';
+      avatarContainer.classList.add(`emotion-${emotion}`);
+
+      // Intensity class
+      if (intensity > 0.7) avatarContainer.classList.add('intensity-high');
+      else if (intensity < 0.35) avatarContainer.classList.add('intensity-low');
+
+      // Badge
+      emotionBadge.textContent = `${emotion} · ${Math.round(intensity * 100)}%`;
+
+      // Ambient glow
+      const colors = glowColors[emotion] || glowColors.neutral;
+      document.documentElement.style.setProperty('--glow-color', colors.glow);
+      document.documentElement.style.setProperty('--glow-color-strong', colors.strong);
+      ambientGlow.style.background = `radial-gradient(ellipse at 50% 30%, ${colors.glow} 0%, transparent 70%)`;
+    }
+
+    function setThinking(active) {
+      if (active) {
+        avatarContainer.classList.add('thinking');
+      } else {
+        avatarContainer.classList.remove('thinking');
+      }
+    }
+
+    // Natural blink every 3-5 seconds
+    function startBlinking() {
+      if (state.blinkInterval) clearInterval(state.blinkInterval);
+
+      function doBlink() {
+        const eyes = document.querySelectorAll('.eye');
+        eyes.forEach(e => e.classList.add('blinking'));
+        setTimeout(() => eyes.forEach(e => e.classList.remove('blinking')), 200);
+      }
+
+      state.blinkInterval = setInterval(() => {
+        // Suspend blink during high-intensity moments
+        if (state.currentIntensity < 0.8) {
+          doBlink();
+        }
+      }, 3000 + Math.random() * 2000);
+    }
+
+    // ===================== VOICE OUTPUT =====================
+    function speakText(text, emotion, intensity) {
+      if (!state.voiceEnabled || !window.speechSynthesis) return;
+
+      // Cancel any current speech
+      window.speechSynthesis.cancel();
+
+      const utterance = new SpeechSynthesisUtterance(text);
+
+      // Voice selection: prefer Samantha, Karen, or Moira
+      const voices = window.speechSynthesis.getVoices();
+      const preferred = voices.find(v =>
+        /samantha|karen|moira/i.test(v.name)
+      ) || voices.find(v =>
+        v.lang.startsWith('en') && /female/i.test(v.name)
+      ) || voices.find(v => v.lang.startsWith('en'));
+
+      if (preferred) utterance.voice = preferred;
+
+      // Emotion-modulated rate and pitch
+      const emotionVoice = {
+        neutral:    { rate: 1.0,  pitch: 1.0 },
+        joy:        { rate: 1.1,  pitch: 1.1 },
+        curiosity:  { rate: 1.05, pitch: 1.05 },
+        empathy:    { rate: 0.9,  pitch: 0.9 },
+        concern:    { rate: 0.85, pitch: 0.95 },
+        excitement: { rate: 1.15, pitch: 1.15 },
+        calm:       { rate: 0.85, pitch: 0.95 },
+        playful:    { rate: 1.1,  pitch: 1.1 },
+        focused:    { rate: 0.95, pitch: 1.0 },
+      };
+
+      const voice = emotionVoice[emotion] || emotionVoice.neutral;
+      utterance.rate = voice.rate;
+      utterance.pitch = voice.pitch;
+      utterance.volume = 0.9;
+
+      window.speechSynthesis.speak(utterance);
+    }
+
+    // ===================== VOICE INPUT =====================
+    function initSpeechRecognition() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        micBtn.style.display = 'none';
+        return;
+      }
+
+      state.recognition = new SpeechRecognition();
+      state.recognition.continuous = false;
+      state.recognition.interimResults = false;
+      state.recognition.lang = 'en-US';
+
+      state.recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        if (transcript.trim()) {
+          messageInput.value = transcript;
+          sendMessage();
+        }
+      };
+
+      state.recognition.onstart = () => {
+        state.isRecording = true;
+        micBtn.classList.add('recording');
+      };
+
+      state.recognition.onend = () => {
+        state.isRecording = false;
+        micBtn.classList.remove('recording');
+      };
+
+      state.recognition.onerror = (event) => {
+        console.error('Speech recognition error:', event.error);
+        state.isRecording = false;
+        micBtn.classList.remove('recording');
+      };
+    }
+
+    function toggleRecording() {
+      if (!state.recognition) return;
+      if (state.isRecording) {
+        state.recognition.stop();
+      } else {
+        state.recognition.start();
+      }
+    }
+
+    // ===================== WEBSOCKET =====================
+    function connect() {
+      const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+      state.ws = new WebSocket(`${protocol}//${location.host}`);
+
+      state.ws.onopen = () => {
+        state.connected = true;
+        updateStatus('connected', true);
+        messageInput.disabled = false;
+        sendBtn.disabled = false;
+        micBtn.disabled = false;
+
+        state.userId = getUserId();
+        state.ws.send(JSON.stringify({ type: 'init', userId: state.userId }));
+      };
+
+      state.ws.onmessage = (event) => {
+        const msg = JSON.parse(event.data);
+
+        switch (msg.type) {
+          case 'init':
+            state.sessionId = msg.sessionId;
+            if (msg.absenceDetected && msg.absenceContext) {
+              addNyraMessage(msg.absenceContext);
+            }
+            break;
+
+          case 'typing':
+            setThinking(true);
+            showTyping();
+            break;
+
+          case 'message-chunk':
+            setThinking(false);
+            removeTyping();
+            appendChunk(msg.content);
+            break;
+
+          case 'message-complete':
+            finalizeMessage();
+            setThinking(false);
+            // Set avatar emotion from response
+            if (msg.emotion) {
+              setEmotion(msg.emotion, msg.intensity || 0.5);
+            }
+            // Speak the response
+            if (state.currentMessageEl) {
+              speakText(state.currentMessageEl.textContent, msg.emotion || 'neutral', msg.intensity || 0.5);
+            }
+            state.currentMessageEl = null;
+            break;
+
+          case 'error':
+            setThinking(false);
+            removeTyping();
+            addNyraMessage('Something went wrong. Let me try again...');
+            console.error('Server error:', msg.error);
+            break;
+        }
+      };
+
+      state.ws.onerror = () => updateStatus('error', false);
+
+      state.ws.onclose = () => {
+        state.connected = false;
+        updateStatus('reconnecting...', false);
+        messageInput.disabled = true;
+        sendBtn.disabled = true;
+        micBtn.disabled = true;
+        setTimeout(connect, 3000);
+      };
+    }
+
+    // ===================== MESSAGING =====================
+    function sendMessage() {
+      const content = messageInput.value.trim();
+      if (!content || !state.connected) return;
+
+      messageInput.value = '';
+      addUserMessage(content);
+
+      state.ws.send(JSON.stringify({
+        type: 'message',
+        userId: state.userId,
+        content,
+      }));
+    }
+
+    function addUserMessage(text) {
+      const div = document.createElement('div');
+      div.className = 'message user';
+      div.innerHTML = `<div class="message-content">${escapeHtml(text)}</div>`;
+      chatContainer.appendChild(div);
+      scrollToBottom();
+    }
+
+    function addNyraMessage(text) {
+      const div = document.createElement('div');
+      div.className = 'message nyra';
+      div.innerHTML = `<div class="message-content">${escapeHtml(text)}</div>`;
+      chatContainer.appendChild(div);
+      scrollToBottom();
+    }
+
+    function appendChunk(chunk) {
+      if (!state.currentMessageEl) {
+        const div = document.createElement('div');
+        div.className = 'message nyra';
+        const content = document.createElement('div');
+        content.className = 'message-content';
+        div.appendChild(content);
+        chatContainer.appendChild(div);
+        state.currentMessageEl = content;
+      }
+      state.currentMessageEl.textContent += chunk;
+      scrollToBottom();
+    }
+
+    function finalizeMessage() {
+      // Message is complete
+    }
+
+    function showTyping() {
+      if (document.getElementById('typingIndicator')) return;
+      const div = document.createElement('div');
+      div.id = 'typingIndicator';
+      div.className = 'message nyra';
+      div.innerHTML = `<div class="typing-dots"><span></span><span></span><span></span></div>`;
+      chatContainer.appendChild(div);
+      scrollToBottom();
+    }
+
+    function removeTyping() {
+      const el = document.getElementById('typingIndicator');
+      if (el) el.remove();
+    }
+
+    // ===================== HELPERS =====================
     function getUserId() {
       let id = localStorage.getItem('nyra-user-id');
       if (!id) {
@@ -343,152 +800,13 @@
       return id;
     }
 
-    // Connect to WebSocket
-    function connect() {
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = `${protocol}//${window.location.host}`;
-
-      ws = new WebSocket(wsUrl);
-
-      ws.onopen = () => {
-        console.log('WebSocket connected');
-        isConnected = true;
-        updateStatus('Connected', true);
-        messageInput.disabled = false;
-        sendButton.disabled = false;
-
-        // Initialize session
-        userId = getUserId();
-        ws.send(JSON.stringify({
-          type: 'init',
-          userId: userId,
-        }));
-      };
-
-      ws.onmessage = (event) => {
-        const message = JSON.parse(event.data);
-
-        switch (message.type) {
-          case 'init':
-            sessionId = message.sessionId;
-            if (message.absenceDetected && message.absenceContext) {
-              showNyraMessage('Nyra says', message.absenceContext);
-            }
-            break;
-
-          case 'message-chunk':
-            addMessageChunk(message.content);
-            break;
-
-          case 'message-complete':
-            completeMessage();
-            break;
-
-          case 'typing':
-            showTypingIndicator();
-            break;
-
-          case 'error':
-            showNyraMessage('Error', message.error);
-            break;
-        }
-      };
-
-      ws.onerror = (error) => {
-        console.error('WebSocket error:', error);
-        updateStatus('Connection error', false);
-      };
-
-      ws.onclose = () => {
-        console.log('WebSocket disconnected');
-        isConnected = false;
-        updateStatus('Disconnected', false);
-        messageInput.disabled = true;
-        sendButton.disabled = true;
-
-        // Attempt to reconnect after 3 seconds
-        setTimeout(connect, 3000);
-      };
-    }
-
-    // Send message
-    function sendMessage() {
-      const content = messageInput.value.trim();
-      if (!content || !isConnected) return;
-
-      messageInput.value = '';
-
-      // Show user message
-      showUserMessage(content);
-
-      // Send to Nyra
-      ws.send(JSON.stringify({
-        type: 'message',
-        userId: userId,
-        content: content,
-      }));
-    }
-
-    // UI Functions
-    function showUserMessage(content) {
-      const messageDiv = document.createElement('div');
-      messageDiv.className = 'message user';
-      messageDiv.innerHTML = `<div class="message-content">${escapeHtml(content)}</div>`;
-      chatContainer.appendChild(messageDiv);
-      scrollToBottom();
-    }
-
-    let currentMessageElement = null;
-
-    function addMessageChunk(chunk) {
-      if (!currentMessageElement) {
-        const messageDiv = document.createElement('div');
-        messageDiv.className = 'message nyra';
-        const contentDiv = document.createElement('div');
-        contentDiv.className = 'message-content';
-        messageDiv.appendChild(contentDiv);
-        chatContainer.appendChild(messageDiv);
-        currentMessageElement = contentDiv;
-      }
-
-      currentMessageElement.innerHTML += escapeHtml(chunk);
-      scrollToBottom();
-    }
-
-    function completeMessage() {
-      currentMessageElement = null;
-    }
-
-    function showNyraMessage(label, content) {
-      const messageDiv = document.createElement('div');
-      messageDiv.className = 'message nyra';
-      messageDiv.innerHTML = `<div class="message-content">${escapeHtml(content)}</div>`;
-      chatContainer.appendChild(messageDiv);
-      scrollToBottom();
-    }
-
-    function showTypingIndicator() {
-      const messageDiv = document.createElement('div');
-      messageDiv.className = 'message nyra';
-      messageDiv.id = 'typing-indicator';
-      messageDiv.innerHTML = `
-        <div class="typing-indicator">
-          <div class="typing-dot"></div>
-          <div class="typing-dot"></div>
-          <div class="typing-dot"></div>
-        </div>
-      `;
-      chatContainer.appendChild(messageDiv);
-      scrollToBottom();
+    function updateStatus(text, connected) {
+      statusBar.textContent = text;
+      statusBar.className = `status-bar ${connected ? 'connected' : 'disconnected'}`;
     }
 
     function scrollToBottom() {
       chatContainer.scrollTop = chatContainer.scrollHeight;
-    }
-
-    function updateStatus(text, connected) {
-      status.textContent = text;
-      status.className = `status ${connected ? 'connected' : 'disconnected'}`;
     }
 
     function escapeHtml(text) {
@@ -497,8 +815,8 @@
       return div.innerHTML;
     }
 
-    // Event Listeners
-    sendButton.addEventListener('click', sendMessage);
+    // ===================== EVENT LISTENERS =====================
+    sendBtn.addEventListener('click', sendMessage);
 
     messageInput.addEventListener('keypress', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) {
@@ -507,17 +825,25 @@
       }
     });
 
-    messageInput.addEventListener('input', (e) => {
-      // Optional: send typing indicator
-      if (isConnected && e.target.value.length > 0) {
-        ws.send(JSON.stringify({
-          type: 'typing',
-          userId: userId,
-        }));
-      }
+    micBtn.addEventListener('click', toggleRecording);
+
+    voiceToggle.addEventListener('click', () => {
+      state.voiceEnabled = !state.voiceEnabled;
+      voiceToggle.classList.toggle('active', state.voiceEnabled);
+      if (!state.voiceEnabled) window.speechSynthesis?.cancel();
     });
 
-    // Initialize
+    // ===================== INIT =====================
+    // Load voices (needed for some browsers)
+    if (window.speechSynthesis) {
+      window.speechSynthesis.getVoices();
+      window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+    }
+
+    initSpeechRecognition();
+    startBlinking();
+    setEmotion('neutral', 0.3);
+    voiceToggle.classList.add('active');
     connect();
   </script>
 </body>
