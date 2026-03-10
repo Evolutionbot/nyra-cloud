@@ -311,7 +311,7 @@ class MemoryStore {
   async getUserContext(userId) {
     const profile = await this.getUserProfile(userId);
     const memories = await this.retrieveMemories(userId, 5);
-    const emotionalState = await this getLatestEmotionalState(userId);
+    const emotionalState = await this.getLatestEmotionalState(userId);
     const timeSinceLastSession = await this.getTimeSinceLastSession(userId);
     const behaviorChange = await this.detectBehaviorChange(userId);
 
