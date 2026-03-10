@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nyra - Your AI Companion</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+        'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+        sans-serif;
+      background: linear-gradient(135deg, #0f0f1e 0%, #1a1a2e 100%);
+      color: #e0e0e0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .container {
+      max-width: 900px;
+      width: 100%;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      padding: 0;
+    }
+
+    /* Header */
+    .header {
+      padding: 20px;
+      border-bottom: 1px solid rgba(224, 224, 224, 0.1);
+      background: rgba(15, 15, 30, 0.7);
+      backdrop-filter: blur(10px);
+    }
+
+    .header-title {
+      font-size: 24px;
+      font-weight: 300;
+      letter-spacing: 2px;
+      color: #ffffff;
+      text-align: center;
+    }
+
+    .header-subtitle {
+      font-size: 12px;
+      color: #888;
+      text-align: center;
+      margin-top: 4px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    /* Chat Container */
+    .chat-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .chat-container::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .chat-container::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .chat-container::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 3px;
+    }
+
+    /* Messages */
+    .message {
+      display: flex;
+      margin-bottom: 12px;
+      animation: slideIn 0.3s ease-out;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .message.user {
+      justify-content: flex-end;
+    }
+
+    .message.nyra {
+      justify-content: flex-start;
+    }
+
+    .message-content {
+      max-width: 70%;
+      padding: 12px 16px;
+      border-radius: 12px;
+      word-wrap: break-word;
+      line-height: 1.5;
+      font-size: 15px;
+    }
+
+    .message.user .message-content {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #ffffff;
+    }
+
+    .message.nyra .message-content {
+      background: rgba(224, 224, 224, 0.1);
+      color: #e0e0e0;
+      border: 1px solid rgba(224, 224, 224, 0.15);
+    }
+
+    /* Typing Indicator */
+    .typing-indicator {
+      display: flex;
+      gap: 4px;
+      padding: 12px 16px;
+      background: rgba(224, 224, 224, 0.1);
+      border: 1px solid rgba(224, 224, 224, 0.15);
+      border-radius: 12px;
+      width: fit-content;
+    }
+
+    .typing-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #888;
+      animation: typingAnimation 1.4s infinite;
+    }
+
+    .typing-dot:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    .typing-dot:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+
+    @keyframes typingAnimation {
+      0%, 60%, 100% {
+        opacity: 0.5;
+      }
+      30% {
+        opacity: 1;
+      }
+    }
+
+    /* Input Area */
+    .input-area {
+      padding: 20px;
+      border-top: 1px solid rgba(224, 224, 224, 0.1);
+      background: rgba(15, 15, 30, 0.7);
+      backdrop-filter: blur(10px);
+    }
+
+    .input-wrapper {
+      display: flex;
+      gap: 12px;
+    }
+
+    input[type='text'] {
+      flex: 1;
+      padding: 12px 16px;
+      background: rgba(224, 224, 224, 0.05);
+      border: 1px solid rgba(224, 224, 224, 0.15);
+      border-radius: 8px;
+      color: #e0e0e0;
+      font-size: 15px;
+      font-family: inherit;
+      transition: all 0.2s ease;
+    }
+
+    input[type='text']:focus {
+      outline: none;
+      background: rgba(224, 224, 224, 0.1);
+      border-color: rgba(224, 224, 224, 0.3);
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    input[type='text']::placeholder {
+      color: #666;
+    }
+
+    button {
+      padding: 12px 24px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 15px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Status */
+    .status {
+      padding: 12px 20px;
+      font-size: 12px;
+      text-align: center;
+      color: #888;
+      background: rgba(224, 224, 224, 0.05);
+      border-top: 1px solid rgba(224, 224, 224, 0.1);
+    }
+
+    .status.connected {
+      color: #4ade80;
+    }
+
+    .status.disconnected {
+      color: #ef4444;
+    }
+
+    /* Initial Message */
+    .welcome-message {
+      text-align: center;
+      padding: 40px 20px;
+      color: #888;
+    }
+
+    .welcome-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+
+    .welcome-text {
+      font-size: 18px;
+      margin-bottom: 8px;
+      color: #aaa;
+    }
+
+    .welcome-subtitle {
+      font-size: 14px;
+      color: #666;
+    }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      .message-content {
+        max-width: 85%;
+      }
+
+      .header-title {
+        font-size: 20px;
+      }
+
+      input[type='text'] {
+        font-size: 16px; /* Prevents zoom on mobile */
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <div class="header-title">Nyra</div>
+      <div class="header-subtitle">Your AI Companion</div>
+    </div>
+
+    <!-- Chat Messages -->
+    <div class="chat-container" id="chatContainer">
+      <div class="welcome-message">
+        <div class="welcome-icon">💬</div>
+        <div class="welcome-text">Welcome to Nyra</div>
+        <div class="welcome-subtitle">Start a conversation</div>
+      </div>
+    </div>
+
+    <!-- Input Area -->
+    <div class="input-area">
+      <div class="input-wrapper">
+        <input
+          type="text"
+          id="messageInput"
+          placeholder="Tell me something..."
+          disabled
+        />
+        <button id="sendButton" disabled>Send</button>
+      </div>
+    </div>
+
+    <!-- Status -->
+    <div class="status disconnected" id="status">
+      Connecting...
+    </div>
+  </div>
+
+  <script>
+    const chatContainer = document.getElementById('chatContainer');
+    const messageInput = document.getElementById('messageInput');
+    const sendButton = document.getElementById('sendButton');
+    const status = document.getElementById('status');
+
+    let ws = null;
+    let sessionId = null;
+    let userId = null;
+    let isConnected = false;
+
+    // Generate or retrieve userId
+    function getUserId() {
+      let id = localStorage.getItem('nyra-user-id');
+      if (!id) {
+        id = 'user-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('nyra-user-id', id);
+      }
+      return id;
+    }
+
+    // Connect to WebSocket
+    function connect() {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${protocol}//${window.location.host}`;
+
+      ws = new WebSocket(wsUrl);
+
+      ws.onopen = () => {
+        console.log('WebSocket connected');
+        isConnected = true;
+        updateStatus('Connected', true);
+        messageInput.disabled = false;
+        sendButton.disabled = false;
+
+        // Initialize session
+        userId = getUserId();
+        ws.send(JSON.stringify({
+          type: 'init',
+          userId: userId,
+        }));
+      };
+
+      ws.onmessage = (event) => {
+        const message = JSON.parse(event.data);
+
+        switch (message.type) {
+          case 'init':
+            sessionId = message.sessionId;
+            if (message.absenceDetected && message.absenceContext) {
+              showNyraMessage('Nyra says', message.absenceContext);
+            }
+            break;
+
+          case 'message-chunk':
+            addMessageChunk(message.content);
+            break;
+
+          case 'message-complete':
+            completeMessage();
+            break;
+
+          case 'typing':
+            showTypingIndicator();
+            break;
+
+          case 'error':
+            showNyraMessage('Error', message.error);
+            break;
+        }
+      };
+
+      ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+        updateStatus('Connection error', false);
+      };
+
+      ws.onclose = () => {
+        console.log('WebSocket disconnected');
+        isConnected = false;
+        updateStatus('Disconnected', false);
+        messageInput.disabled = true;
+        sendButton.disabled = true;
+
+        // Attempt to reconnect after 3 seconds
+        setTimeout(connect, 3000);
+      };
+    }
+
+    // Send message
+    function sendMessage() {
+      const content = messageInput.value.trim();
+      if (!content || !isConnected) return;
+
+      messageInput.value = '';
+
+      // Show user message
+      showUserMessage(content);
+
+      // Send to Nyra
+      ws.send(JSON.stringify({
+        type: 'message',
+        userId: userId,
+        content: content,
+      }));
+    }
+
+    // UI Functions
+    function showUserMessage(content) {
+      const messageDiv = document.createElement('div');
+      messageDiv.className = 'message user';
+      messageDiv.innerHTML = `<div class="message-content">${escapeHtml(content)}</div>`;
+      chatContainer.appendChild(messageDiv);
+      scrollToBottom();
+    }
+
+    let currentMessageElement = null;
+
+    function addMessageChunk(chunk) {
+      if (!currentMessageElement) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'message nyra';
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'message-content';
+        messageDiv.appendChild(contentDiv);
+        chatContainer.appendChild(messageDiv);
+        currentMessageElement = contentDiv;
+      }
+
+      currentMessageElement.innerHTML += escapeHtml(chunk);
+      scrollToBottom();
+    }
+
+    function completeMessage() {
+      currentMessageElement = null;
+    }
+
+    function showNyraMessage(label, content) {
+      const messageDiv = document.createElement('div');
+      messageDiv.className = 'message nyra';
+      messageDiv.innerHTML = `<div class="message-content">${escapeHtml(content)}</div>`;
+      chatContainer.appendChild(messageDiv);
+      scrollToBottom();
+    }
+
+    function showTypingIndicator() {
+      const messageDiv = document.createElement('div');
+      messageDiv.className = 'message nyra';
+      messageDiv.id = 'typing-indicator';
+      messageDiv.innerHTML = `
+        <div class="typing-indicator">
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+        </div>
+      `;
+      chatContainer.appendChild(messageDiv);
+      scrollToBottom();
+    }
+
+    function scrollToBottom() {
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+
+    function updateStatus(text, connected) {
+      status.textContent = text;
+      status.className = `status ${connected ? 'connected' : 'disconnected'}`;
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // Event Listeners
+    sendButton.addEventListener('click', sendMessage);
+
+    messageInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+
+    messageInput.addEventListener('input', (e) => {
+      // Optional: send typing indicator
+      if (isConnected && e.target.value.length > 0) {
+        ws.send(JSON.stringify({
+          type: 'typing',
+          userId: userId,
+        }));
+      }
+    });
+
+    // Initialize
+    connect();
+  </script>
+</body>
+</html>

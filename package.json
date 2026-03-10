@@ -1,0 +1,35 @@
+{
+  "name": "nyra-cloud",
+  "version": "1.0.0",
+  "description": "Nyra - AI companion inspired by Samantha from Her. Voice-first, emotionally intelligent, persistent memory.",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "ai",
+    "companion",
+    "voice",
+    "memory",
+    "emotional-intelligence"
+  ],
+  "author": "Nyra Team",
+  "license": "MIT",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.16.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "pg": "^8.11.0",
+    "uuid": "^9.0.0",
+    "ws": "^8.14.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

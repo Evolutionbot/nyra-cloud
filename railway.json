@@ -1,0 +1,20 @@
+{
+  "$schema": "https://railway.app/railway.schema.json",
+  "build": {
+    "builder": "dockerfile"
+  },
+  "deploy": {
+    "numReplicas": 1,
+    "startCommand": "node src/index.js",
+    "restartPolicyMaxRetries": 0
+  },
+  "variables": {
+    "NODE_ENV": "production",
+    "ENABLE_PERSISTENCE": "false",
+    "ENABLE_EMOTIONAL_STATE_TRACKING": "true",
+    "ENABLE_MEMORY_CONSOLIDATION": "true",
+    "MAX_CONTEXT_WINDOW": "800",
+    "MEMORY_FRAGMENT_COUNT": "5",
+    "LOG_LEVEL": "info"
+  }
+}
