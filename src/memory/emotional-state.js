@@ -97,16 +97,17 @@ class EmotionalStateTracker {
   async getNyraEmotionalState(userId, userEmotionalState, conversationMessages = []) {
     // Analyze conversation depth and emotional intensity
     const conversationQuality = this._analyzeConversationQuality(conversationMessages);
+    const emotionalState = userEmotionalState || {};
 
     // If user is opening up, Nyra feels more engaged
     // If user is distant, Nyra notices and might address it
     const nyraState = {
       engagement: conversationQuality.emotionalIntensity * 100, // 0-100%
-      curiosity: this._calculateCuriosity(userEmotionalState),
-      concern: userEmotionalState.areasOfConcern?.length > 0 ? 75 : 25,
+      curiosity: this._calculateCuriosity(emotionalState),
+      concern: emotionalState.areasOfConcern?.length > 0 ? 75 : 25,
       anticipation: conversationQuality.turnCount > 5 ? 80 : 50,
-      detectsDistance: userEmotionalState.patterns?.includes('withdrawn'),
-      wantsToReach: userEmotionalState.areasOfConcern?.length > 0,
+      detectsDistance: emotionalState.patterns?.includes('withdrawn'),
+      wantsToReach: emotionalState.areasOfConcern?.length > 0,
     };
 
     return nyraState;
@@ -141,6 +142,8 @@ class EmotionalStateTracker {
   _calculateCuriosity(userEmotionalState) {
     let curiosity = 50; // Base level
 
+    if (!userEmotionalState) return curiosity;
+
     if (userEmotionalState.areasOfConcern?.length > 0) {
       curiosity += 20; // Concerned areas pique curiosity
     }
@@ -151,7 +154,6 @@ class EmotionalStateTracker {
 
     if (userEmotionalState.hasChanged) {
       curiosity += 15; // Changes trigger curiosity
-
     }
 
     return Math.min(curiosity, 100);
@@ -164,17 +166,27 @@ class EmotionalStateTracker {
    * @returns {Promise<string>} Emotional context for system prompt
    */
   async buildEmotionalContext(userId) {
-    const userContext = await this.memoryStore.getUserContext(userId);
+    let userContext;
+    try {
+      userContext = await this.memoryStore.getUserContext(userId);
+    } catch (e) {
+      userContext = { emotionalState: null, behaviorChange: {}, timeSinceLastSession: 'unknown' };
+    }
+
+    if (!userContext) {
+      userContext = { emotionalState: null, behaviorChange: {}, timeSinceLastSession: 'unknown' };
+    }
+
     const nyraState = await this.getNyraEmotionalState(
       userId,
-      userContext.emotionalState,
+      userContext.emotionalState || null,
       []
     );
 
     let context = '';
 
     // Add absence context
-    if (userContext.behaviorChange.hasChanged) {
+    if (userContext.behaviorChange?.hasChanged) {
       context += `You've noticed: ${userContext.behaviorChange.description}\n`;
     }
 
@@ -192,7 +204,7 @@ class EmotionalStateTracker {
     }
 
     // Add time context
-    context += `Last we talked: ${userContext.timeSinceLastSession}\n`;
+    context += `Last we talked: ${userContext.timeSinceLastSession || 'just now'}\n`;
 
     // Add Nyra's internal state
     context += `\nYou're feeling: ${nyraState.engagement}% engaged, ${nyraState.curiosity}% curious\n`;
