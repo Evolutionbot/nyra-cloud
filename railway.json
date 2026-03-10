@@ -6,7 +6,7 @@
   "deploy": {
     "numReplicas": 1,
     "startCommand": "node src/index.js",
-    "restartPolicyMaxRetries": 0
+    "restartPolicyMaxRetries": 3
   },
   "variables": {
     "NODE_ENV": "production",
